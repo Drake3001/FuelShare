@@ -2,7 +2,7 @@ import datetime
 import logging
 
 from database.session import get_session, init_db
-from database.models.user import User
+from database.models.users import User
 from mtoyconn.synctrips import synctrips
 
 # logging.basicConfig(level=logging.ERROR)
@@ -29,6 +29,7 @@ async def test():
     for vehicle in vehicles:
         await vehicle.update()
         print(f"Dashboard: {vehicle.dashboard}")
+        print(f'Data {vehicle.vin}')
         trips= await vehicle.get_trips(from_date=datetime.date(year=2025, month=10, day=1), to_date=datetime.date(year=2025, month=10, day=17))
         i=1
         for trip in trips:
@@ -51,7 +52,8 @@ async def script_test():
             session.add(entry)
         await session.commit()
 
+
 if __name__ == '__main__':
     # asyncio.run(test())
     asyncio.run(database_test())
-    asyncio.run(script_test())
+    # asyncio.run(script_test())

@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from dotenv import load_dotenv
-from .models import Base  # zakładam, że masz katalog database/models/
+from .models import Base
 
 load_dotenv()
 DB_PATH = os.getenv("DATABASE_PATH")

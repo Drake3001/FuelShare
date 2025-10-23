@@ -2,7 +2,7 @@ import datetime
 import dotenv
 import os
 from pytoyoda import *
-from database.models.trip import Trip
+from database.models.trips import Trip
 
 async def synctrips(startDate: datetime, endDate: datetime=datetime.datetime.now()):
     dotenv.load_dotenv()

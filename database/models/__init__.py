@@ -2,5 +2,8 @@ from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()
 
-from .user import User
-from .trip import Trip
+from .users import User
+from .trips import Trip
+from .trip_payer import TripPayer
+from .vechicle_user import VechicleUser
+from .vehicles import Vehicle

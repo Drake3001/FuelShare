@@ -1,4 +1,4 @@
-from sqlalchemy import Integer, Column, String, DateTime, Float, Interval, ForeignKey
+from sqlalchemy import Integer, Column, String, DateTime, Float, Interval, ForeignKey, Boolean
 from . import Base
 
 
@@ -29,8 +29,14 @@ class Trip(Base):
     fuel_consumed = Column(Float, nullable=False)
     average_fuel_consumed = Column(Float, nullable=False)
 
-    #UserDriving
-    user = Column(Integer, ForeignKey('user.id'), nullable=True)
+    #User
+    driver = Column(Integer, ForeignKey('user.id'), nullable=True)
+    #Vehicle
+    vehicle = Column(Integer, ForeignKey('vehicle.id'), nullable=True)
+    #Is Before Refuel
+    refuel = Column(Boolean, nullable=True)
+
+
 
 
     def __repr__(self):
