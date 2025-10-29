@@ -1,8 +1,7 @@
 import datetime
 import logging
 
-from database.session import get_session, init_db
-from database.models.users import User
+
 from mtoyconn.synctrips import synctrips
 
 # logging.basicConfig(level=logging.ERROR)
@@ -37,20 +36,15 @@ async def test():
             i+=1
 
 
-async def database_test():
-    await init_db()
-    async with get_session() as session:
-        new_user = User(name="Kuba", surname="Kowalski")
-        session.add(new_user)
-        await session.commit()
 
-async def script_test():
-    trip_data= await synctrips(datetime.datetime(2025, 10, 13),
-                datetime.datetime(2025, 10, 17))
-    async with get_session() as session:
-        for entry in trip_data:
-            session.add(entry)
-        await session.commit()
+#
+# async def script_test():
+#     trip_data= await synctrips(datetime.datetime(2025, 10, 13),
+#                 datetime.datetime(2025, 10, 17))
+#     async with get_session() as session:
+#         for entry in trip_data:
+#             session.add(entry)
+#         await session.commit()
 
 
 if __name__ == '__main__':
