@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 from datetime import datetime
 from .user_schema import UserSchema
 from .vehicle_schema import VehicleSchema
@@ -27,6 +27,14 @@ class TripSchema(TripCreateSchema):
         orm_mode = True
 
 class TripUpdateSchema(BaseModel):
+    id: int
     refuel: bool | None = None
     driver_id: int | None = None
     vehicle_id: int | None = None
+    period: int | None = None
+
+    @model_validator(mode="after")
+    def ensure_has_id(self):
+        if not self.id:
+            raise ValueError("id is required for update")
+        return self

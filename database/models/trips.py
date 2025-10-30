@@ -8,25 +8,25 @@ class Trip(Base):
 
     id = Column(Integer, primary_key=True)
 
-    # Localizations
+    #Localizations
     start_lat = Column(Float, nullable=False)
     start_lon = Column(Float, nullable=False)
     end_lat = Column(Float, nullable=False)
     end_lon = Column(Float, nullable=False)
 
-    # Times
+    #Times
     start_time = Column(DateTime(timezone=True), nullable=False)
     end_time = Column(DateTime(timezone=True), nullable=False)
     duration = Column(Integer, nullable=False)
 
-    # Distance
+    #Distance
     distance = Column(Float, nullable=False)
 
-    # EV informations
+    #EV informations
     ev_duration = Column(Integer, nullable=True)
     ev_distance = Column(Float, nullable=True)
 
-    # Fuel
+    #Fuel
     fuel_consumed = Column(Float, nullable=False)
     average_fuel_consumed = Column(Float, nullable=False)
 
@@ -34,8 +34,11 @@ class Trip(Base):
     driver_id = Column(Integer, ForeignKey('user.id'), nullable=True)
     #Vehicle
     vehicle_id = Column(Integer, ForeignKey('vehicle.id'), nullable=True)
-    #Is Before Refuel
+    #IS after refuel begining of a new period
     refuel = Column(Boolean, nullable=True)
+    #Period
+    period= Column(Integer, nullable=True)
+    
 
     driver = relationship("User", back_populates="trips_driven")
 
