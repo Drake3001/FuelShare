@@ -23,6 +23,7 @@ class TripSchema(TripCreateSchema):
     driver: UserSchema | None
     vehicle: VehicleSchema | None
     payers: list[UserSchema] = []
+    period: int | None
     class Config:
         orm_mode = True
 
@@ -32,6 +33,7 @@ class TripUpdateSchema(BaseModel):
     driver_id: int | None = None
     vehicle_id: int | None = None
     period: int | None = None
+
 
     @model_validator(mode="after")
     def ensure_has_id(self):

@@ -1,18 +1,15 @@
-# w pliku: database/crud.py
 from dotenv.cli import unset
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import joinedload, selectinload
 from sqlalchemy import update
 
-from .models.trips import Trip
-from .schemas.trip_schema import TripSchema, TripUpdateSchema
-from .schemas.trip_schema import TripCreateSchema
+from database.models.trips import Trip
+from database.schemas.trip_schema import TripSchema, TripUpdateSchema
+from database.schemas.trip_schema import TripCreateSchema
 from datetime import datetime
 
 
-# tripCRUDS
-#TRIP CREATE
 async def create_all_trips(db: AsyncSession, dtos: list[TripCreateSchema]):
     new_trips = []
     for dto in dtos:
@@ -61,10 +58,6 @@ async def get_all_trips(db: AsyncSession) -> list[TripSchema]:
     # Używamy .unique(), aby SQLAlchemy poprawnie obsłużyło 
     # zduplikowane wiersze z JOIN-ów
     sqlalchemy_trips = result.scalars().unique().all()
-
-    # Kiedy Pydantic (z orm_mode=True) poprosi o trip.driver 
-    # lub trip.payers, SQLAlchemy zobaczy, że te dane są już
-    # załadowane w pamięci i NIE wykona żadnych nowych zapytań.
     return [TripSchema.model_validate(trip) for trip in sqlalchemy_trips]
 async def get_one_trip(db: AsyncSession, trip_id: int) -> TripSchema| None:
     query= select(Trip).where(Trip.id == trip_id)

@@ -5,7 +5,7 @@ import os
 from pydantic import ValidationError
 from pytoyoda import *
 from database.schemas.trip_schema import TripCreateSchema
-from database.crud import create_all_trips
+from database.cruds.crud_trip import create_all_trips
 from database.session import get_session
 
 
