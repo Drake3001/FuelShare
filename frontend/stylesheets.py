@@ -24,7 +24,7 @@ trip_card_stylesheet = """
 /* Stylizacja tylko dla TripCard - wyższy priorytet */
 TripCard {
     background-color: #ffffff;
-    border: 1px solid #e1e5e9;
+    border: 5px solid #e1e5e9;
     border-radius: 12px;
     padding: 16px;
     margin: 8px;
@@ -37,6 +37,7 @@ TripCard QLabel {
 
 TripCard QLabel:first-child {
     font-weight: bold;
+    border: 5px solid #e1e5e9;
     color: #409eff;
     font-size: 14px;
 }

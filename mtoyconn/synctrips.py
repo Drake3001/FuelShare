@@ -5,8 +5,6 @@ import os
 from pydantic import ValidationError
 from pytoyoda import *
 from database.schemas.trip_schema import TripCreateSchema
-from database.cruds.crud_trip import create_all_trips
-from database.session import get_session
 
 
 async def synctrips(startDate: datetime, endDate: datetime=datetime.datetime.now()):
@@ -24,12 +22,7 @@ async def synctrips(startDate: datetime, endDate: datetime=datetime.datetime.now
         dto = parse_trips(trip)
         if dto:
             validated_dtos.append(dto)
-    if not validated_dtos:
-        print("No trips found")
-        return
-    async with get_session() as session:
-        await create_all_trips(session, validated_dtos)
-    print("Zsynchronizowano naura")
+    return validated_dtos
 
 
 

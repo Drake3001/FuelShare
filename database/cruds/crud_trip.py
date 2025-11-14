@@ -1,135 +1,143 @@
-from dotenv.cli import unset
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
-from sqlalchemy.orm import joinedload, selectinload
-from sqlalchemy import update
+from sqlalchemy import select
+from sqlalchemy.orm import joinedload, selectinload, Session
+from typing import List, Optional
 
 from database.models.trips import Trip
-from database.schemas.trip_schema import TripSchema, TripUpdateSchema
-from database.schemas.trip_schema import TripCreateSchema
-from datetime import datetime
+from database.schemas.trip_schema import TripSchema, TripUpdateSchema, TripCreateSchema
+from database.session import get_session
 
 
-async def create_all_trips(db: AsyncSession, dtos: list[TripCreateSchema]):
-    new_trips = []
-    for dto in dtos:
-        trip_data= dto.model_dump()
-        new_trip = Trip(**trip_data)
-        new_trips.append(new_trip)
+class TripService:
+    def __init__(self):
+        self.session_factory = get_session
 
-    db.add_all(new_trips)
-    await db.commit()
-    print(f"Pomyślnie dodano {len(new_trips)} przejazdów do bazy.")
+    def create_all_trips(self, dtos: List[TripCreateSchema]):
+        """Tworzenie wielu tripów naraz"""
+        with self.session_factory() as db:
+            new_trips = []
+            for dto in dtos:
+                trip_data = dto.model_dump()
+                new_trip = Trip(**trip_data)
+                new_trips.append(new_trip)
 
-async def create_trip(db: AsyncSession,trip_dto: TripCreateSchema,) -> Trip:
-    trip_data = trip_dto.model_dump()
-    new_trip = Trip(**trip_data)
-    db.add(new_trip)
-    await db.commit()
-    await db.refresh(new_trip)
-    return new_trip
+            db.add_all(new_trips)
+            db.commit()
+            print(f"Pomyślnie dodano {len(new_trips)} przejazdów do bazy.")
 
+    def create_trip(self, trip_dto: TripCreateSchema) -> Trip:
+        """Tworzenie pojedynczego tripa"""
+        with self.session_factory() as db:
+            trip_data = trip_dto.model_dump()
+            new_trip = Trip(**trip_data)
+            db.add(new_trip)
+            db.commit()
+            db.refresh(new_trip)
+            return new_trip
 
-#TRIP READ
-async def get_all_trips(db: AsyncSession) -> list[TripSchema]:
-    """
-    Pobiera wszystkie przejazdy, "chętnie" (eagerly) ładując powiązane
-    obiekty, aby uniknąć problemu N+1.
-    """
+    def get_all_trips(self) -> List[TripSchema]:
+        """Pobieranie wszystkich tripów z relacjami"""
+        with self.session_factory() as db:
+            query = (
+                select(Trip)
+                .options(
+                    joinedload(Trip.driver),
+                    joinedload(Trip.vehicle),
+                    selectinload(Trip.payers)
+                )
+                .order_by(Trip.start_time.desc())
+            )
 
-    query = (
-        select(Trip)
-        .options(
-            # Załaduj kierowcę (User) używając JOIN
-            joinedload(Trip.driver),
+            result = db.execute(query)
+            sqlalchemy_trips = result.scalars().unique().all()
+            return [TripSchema.model_validate(trip) for trip in sqlalchemy_trips]
 
-            # Załaduj pojazd (Vehicle) używając JOIN
-            joinedload(Trip.vehicle),
+    def get_one_trip(self, trip_id: int) -> Optional[TripSchema]:
+        """Pobieranie pojedynczego tripa"""
+        with self.session_factory() as db:
+            query = select(Trip).where(Trip.id == trip_id)
+            result = db.execute(query)
+            trip = result.scalar_one_or_none()
+            return TripSchema.model_validate(trip) if trip else None
 
-            # Załaduj listę płacących (User) używając 
-            # osobnego zapytania SELECT...IN...
-            selectinload(Trip.payers)
-        )
-        .order_by(Trip.start_time.desc())
-    )
+    def update_trip(self, trip_update: TripUpdateSchema) -> Optional[Trip]:
+        """Aktualizacja pojedynczego tripa"""
+        with self.session_factory() as db:
+            data = trip_update.model_dump(exclude_unset=True)
+            trip_id = data.pop("id", None)
+            if not trip_id:
+                raise ValueError("TripUpdateSchema must include 'id'")
 
-    result = await db.execute(query)
+            # Pobierz trip do aktualizacji
+            query = select(Trip).where(Trip.id == trip_id)
+            result = db.execute(query)
+            trip = result.scalar_one_or_none()
 
-    # Używamy .unique(), aby SQLAlchemy poprawnie obsłużyło 
-    # zduplikowane wiersze z JOIN-ów
-    sqlalchemy_trips = result.scalars().unique().all()
-    return [TripSchema.model_validate(trip) for trip in sqlalchemy_trips]
-async def get_one_trip(db: AsyncSession, trip_id: int) -> TripSchema| None:
-    query= select(Trip).where(Trip.id == trip_id)
-    db_trip = await db.execute(query)
-    return db_trip.one_or_none()
+            if not trip:
+                return None
 
-# TRIP UPDATE
-async def update_trip(db: AsyncSession, trip_update: TripUpdateSchema) -> Trip | None:
-    data = trip_update.model_dump(exclude_unset=True)
-    trip_id = data.pop("id", None)
-    if not trip_id:
-        raise ValueError("TripUpdateSchema must include 'id'")
+            # Zaktualizuj pola
+            for key, value in data.items():
+                setattr(trip, key, value)
 
-    query = (
-        update(Trip)
-        .where(Trip.id == trip_id)
-        .values(**data)
-    )
+            db.commit()
+            db.refresh(trip)
+            return trip
 
-    result = await db.execute(query)
-    updated_trip = result.scalar_one_or_none()
+    def batch_update_trips(self, updates: List[TripUpdateSchema]):
+        """Batch update wielu tripów z przeliczaniem okresów"""
+        if not updates:
+            return
 
-    await db.commit()
-    return updated_trip
+        with self.session_factory() as db:
+            update_mappings = [
+                dto.model_dump(exclude_unset=True) for dto in updates
+            ]
 
+            # Bulk update
+            db.bulk_update_mappings(Trip, update_mappings)
 
+            modified_refuels = [u.id for u in updates if u.id is not None]
+            if not modified_refuels:
+                db.commit()
+                return
 
-async def batch_update_trips(db: AsyncSession, updates: list[TripUpdateSchema]):
-    if not updates:
-        return
-    update_mappings = [
-        dto.model_dump(exclude_unset=True) for dto in updates
-    ]
-    await db.run_sync(
-        lambda sync_session: sync_session.bulk_update_mappings(Trip, update_mappings)
-    )
-    modified_refuels= [u.id for u in updates if u.id is not None]
-    if not modified_refuels:
-        await db.commit()
-        return
+            # Logika okresów
+            query = (
+                select(Trip.start_time, Trip.period, Trip.refuel)
+                .where(Trip.id.in_(modified_refuels))
+                .order_by(Trip.start_time.asc())
+            )
+            result = (db.execute(query)).all()
 
-    query = (
-        select(Trip.start_time, Trip.period, Trip.refuel)
-        .where(Trip.id.in_(modified_refuels))
-        .order_by(Trip.start_time.asc())
-    )
-    result = (await db.execute(query)).all()
-    start_time, period, refuel = result[0]
-    if period is not None:
-        if Trip.refuel:
-            period+=1
-        else:
-            period-=1
-    else:
-        period=1
-    query =(
-        select(Trip.id, Trip.refuel)
-        .where(Trip.start_time>=start_time)
-        .order_by(Trip.start_time.asc())
-    )
-    period_adjustment= (await db.execute(query)).all()
-    print(len(period_adjustment))
-    updates_to_commit= reevaluate_periods(period_adjustment, period)
-    await db.run_sync(lambda s: s.bulk_update_mappings(Trip, updates_to_commit))
+            if not result:
+                db.commit()
+                return
 
-    await db.commit()
+            start_time, period, refuel = result[0]
+            if period is not None:
+                if refuel:
+                    period += 1
+                else:
+                    period -= 1
+            else:
+                period = 1
 
-def reevaluate_periods( trip_ids:[(int, str)], start_period: int):
-    period= start_period
-    result = []
-    for (trip_id, refuel) in trip_ids:
-        if refuel:
-            period += 1
-        result.append({"id": trip_id, "period": period})
-    return result
+            query = (
+                select(Trip.id, Trip.refuel)
+                .where(Trip.start_time >= start_time)
+                .order_by(Trip.start_time.asc())
+            )
+            period_adjustment = db.execute(query).all()
+
+            updates_to_commit = self.__reevaluate_periods(period_adjustment, period)
+            db.bulk_update_mappings(Trip, updates_to_commit)
+            db.commit()
+
+    def __reevaluate_periods(self, trip_ids: List, start_period: int):
+        period = start_period
+        result = []
+        for (trip_id, refuel) in trip_ids:
+            if refuel:
+                period += 1
+            result.append({"id": trip_id, "period": period})
+        return result

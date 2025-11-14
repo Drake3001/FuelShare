@@ -1,15 +1,16 @@
-import sys
-from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QLabel, QPushButton, QFrame, QStackedWidget, QHBoxLayout
-from frontend.TripPage import TripsListPage
+from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QLabel, QPushButton, QStackedWidget, QHBoxLayout
+from frontend.subpages.TripPage.TripPage import TripsListPage
+from frontend.subpages.TripPage.TripLoader import TripLoader
 from frontend.UserPage import UserPage
+from database.cruds.crud_trip import TripService
 
 class App(QMainWindow):
-    def __init__(self):
+    def __init__(self, trip_service: TripService):
         super().__init__()
         self.stacked_widget = None
         self.trips_list_page = None
         self.add_trip_page = None
-
+        self.trip_service = trip_service
         self.setup_main_window()
         self.setup_ui()
 
@@ -118,7 +119,7 @@ class App(QMainWindow):
 
     def setup_pages(self):
         # Strona 1: Lista tripów
-        self.trips_list_page = TripsListPage()
+        self.trips_list_page = TripsListPage(self.trip_service)
         self.stacked_widget.addWidget(self.trips_list_page)
 
 

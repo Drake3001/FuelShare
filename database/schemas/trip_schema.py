@@ -22,10 +22,10 @@ class TripSchema(TripCreateSchema):
     refuel: bool | None
     driver: UserSchema | None
     vehicle: VehicleSchema | None
-    payers: list[UserSchema] = []
+    payers: list[UserSchema] | None = []
     period: int | None
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class TripUpdateSchema(BaseModel):
     id: int

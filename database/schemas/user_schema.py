@@ -1,8 +1,8 @@
 from pydantic import BaseModel
 
 class UserBase(BaseModel):
-    name: str
-    surname: str
+    name: str  | None
+    surname: str | None
 
 class UserCreateSchema(UserBase):
     pass
@@ -15,4 +15,4 @@ class UserUpdateSchema(UserCreateSchema):
 class UserSchema(UserBase):
     id: int
     class Config:
-        orm_mode = True
+        from_attributes = True

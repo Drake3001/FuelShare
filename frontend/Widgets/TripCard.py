@@ -5,11 +5,12 @@ from frontend.stylesheets import trip_card_stylesheet
 
 
 class TripCard(QWidget):
-    def __init__(self, trip_data: TripSchema):
+    def __init__(self, trip_data: TripSchema, trip_callback):
         super().__init__()
         self.trip_data = trip_data
         self.setup_card()
         self.setStyleSheet(trip_card_stylesheet)
+        self.trip_callback = trip_callback
 
     def setup_card(self):
         layout = QHBoxLayout()
@@ -68,8 +69,8 @@ class TripCard(QWidget):
         layout.addWidget(driver_val)
         layout.addWidget(distance_val)
         layout.addWidget(duration_val)
-        layout.addWidget(ev_duration_val)
         layout.addWidget(ev_distance_val)
+        layout.addWidget(ev_duration_val)
         layout.addWidget(consumption_val)
         layout.addWidget(avg_fuel_val)
         layout.addWidget(refuel_val)
