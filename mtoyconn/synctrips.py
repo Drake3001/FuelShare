@@ -14,7 +14,6 @@ async def synctrips(startDate: datetime, endDate: datetime=datetime.datetime.now
     client = MyT(username=username, password=password, use_metric=True)
     await client.login()
     vehicles = await client.get_vehicles()
-    ###pobieranie wszystkich samochodów i wpisywanie ich do bazy danych na bieżąco
     vehicle=vehicles[0]
     trips= await vehicle.get_trips(startDate, endDate, full_route=False)
     validated_dtos= []

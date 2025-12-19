@@ -1,16 +1,23 @@
 from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QLabel, QPushButton, QStackedWidget, QHBoxLayout
-from frontend.subpages.TripPage.TripPage import TripsListPage
-from frontend.subpages.TripPage.TripLoader import TripLoader
+
+from database.Services.UserService import UserService
+from frontend.subpages.TripPage.TripsView import TripsView
+from frontend.subpages.TripPage.TripsViewModel import TripViewModel
 from frontend.UserPage import UserPage
-from database.cruds.crud_trip import TripService
+from database.Services.TripService import TripService
 
 class App(QMainWindow):
-    def __init__(self, trip_service: TripService):
+    def __init__(self, trip_service: TripService, user_service: UserService):
         super().__init__()
         self.stacked_widget = None
         self.trips_list_page = None
         self.add_trip_page = None
+
+        #Services
         self.trip_service = trip_service
+        self.user_service = user_service
+
+        #setup
         self.setup_main_window()
         self.setup_ui()
 
@@ -34,10 +41,8 @@ class App(QMainWindow):
         self.stacked_widget = QStackedWidget()
         main_layout.addWidget(self.stacked_widget)
 
-        # Inicjalizacja stron
         self.setup_pages()
 
-        # Ustaw domyślną stronę
         self.show_trips_list()
 
     def create_header(self):
@@ -119,7 +124,7 @@ class App(QMainWindow):
 
     def setup_pages(self):
         # Strona 1: Lista tripów
-        self.trips_list_page = TripsListPage(self.trip_service)
+        self.trips_list_page = TripsView(self.trip_service, self.user_service)
         self.stacked_widget.addWidget(self.trips_list_page)
 
 

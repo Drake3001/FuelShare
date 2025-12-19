@@ -1,7 +1,10 @@
-from pydantic import BaseModel, model_validator
+from typing import Optional, List
+
+from pydantic import BaseModel, model_validator, Field, field_validator
 from datetime import datetime
 from .user_schema import UserSchema
 from .vehicle_schema import VehicleSchema
+
 
 class TripCreateSchema(BaseModel):
     start_lat: float
@@ -14,6 +17,7 @@ class TripCreateSchema(BaseModel):
     distance: float
     ev_duration: int | None
     ev_distance: float | None
+
     fuel_consumed: float
     average_fuel_consumed: float
 
@@ -22,15 +26,26 @@ class TripSchema(TripCreateSchema):
     refuel: bool | None
     driver: UserSchema | None
     vehicle: VehicleSchema | None
-    payers: list[UserSchema] | None = []
     period: int | None
+    payer_ids: List[int] = Field(default=[], validation_alias="payers")
     class Config:
         from_attributes = True
+    @field_validator("payer_ids", mode="before")
+    @classmethod
+    def extract_ids_from_users(cls, v):
+        if not v:
+            return []
+
+        if hasattr(v[0], "id"):
+            return [user.id for user in v]
+
+        return v
 
 class TripUpdateSchema(BaseModel):
     id: int
     refuel: bool | None = None
     driver_id: int | None = None
+    payer_ids: Optional[List[int]] = None
     vehicle_id: int | None = None
     period: int | None = None
 
@@ -40,3 +55,4 @@ class TripUpdateSchema(BaseModel):
         if not self.id:
             raise ValueError("id is required for update")
         return self
+
