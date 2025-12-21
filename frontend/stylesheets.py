@@ -56,3 +56,39 @@ TripCard QPushButton:hover {
     background-color: #66b1ff;
 }
 """
+
+userRowStyleSheet="""
+            UserRowWidget {
+                background-color: white;
+                border: 1px solid #e0e0e0;
+                border-radius: 4px;
+            }
+            UserRowWidget:hover {
+                background-color: #f9f9f9;
+                border: 1px solid #d0d0d0;
+            }
+            QLabel {
+                border: none;
+                font-size: 14px;
+                color: #333;
+            }
+            QPushButton {
+                background-color: white;
+                border: 1px solid #d1d5db;
+                border-radius: 4px;
+                padding: 5px 10px;
+                color: #374151;
+                font-weight: 500;
+            }
+            QPushButton:hover {
+                background-color: #f3f4f6;
+                border-color: #9ca3af;
+                color: #111827;
+            }
+            /* Styl specyficzny dla przycisku usuwania (opcjonalnie czerwony przy hover) */
+            QPushButton#btn_delete:hover {
+                background-color: #fef2f2;
+                border-color: #fca5a5;
+                color: #dc2626;
+            }
+        """

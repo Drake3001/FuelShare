@@ -16,3 +16,7 @@ header_mapping = {
     "Refuel": "refuel",
     "Period": "period",
 }
+CreateUserDialogTitle="Utwórz nowego użytkownika"
+user_fields=["Imię", "Nazwisko", "Email"]
+user_delete_dialog = lambda val: "Czy na pewno chcesz usunąć użytkownika "+val+"?Spowoduje to trwałe usunięcie go z historii."
+create_user_button = "Dodaj użytkownika"

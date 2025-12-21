@@ -5,8 +5,10 @@ from PyQt6.QtCore import Qt, QTimer
 from typing import Dict, List
 
 from database.schemas.trip_schema import TripUpdateSchema
+from frontend.Widgets.SortingHeader import SortingHeader
 from frontend.Widgets.TripEditDialog import TripEditDialog
 from frontend.Widgets.TripCard import TripCard
+from frontend.const import header_names, header_mapping
 
 from frontend.subpages.TripPage.TripsViewModel import TripViewModel
 
@@ -21,6 +23,7 @@ class TripsView(QWidget):
         self.vm = TripViewModel(trip_service, user_service)
 
         self.loaded_cards: Dict[int, TripCard] = {}
+        self.header_widgets = []
 
         self.chunk_size = 10
         self.current_offset = 0
@@ -30,13 +33,28 @@ class TripsView(QWidget):
         self.setup_ui()
 
         self.vm.trip_updated.connect(self.on_trip_updated)
-        self.vm.data_changed.connect(self.on_data_reload)
+        self.vm.content_changed.connect(self.on_data_reload)
 
         self.load_more_trips()
 
     def setup_ui(self):
         layout = QVBoxLayout()
         self.setLayout(layout)
+
+        self.headers_container= QWidget()
+        self.headers_layout = QHBoxLayout()
+        self.headers_container.setLayout(self.headers_layout)
+
+
+
+        for display_text, field_name in header_mapping.items():
+            header = SortingHeader(display_text, callback=None)
+            callback = lambda f=field_name, h=header: self.on_header_clicked(f, h)
+
+            header.callback = callback
+
+            self.header_widgets.append(header)
+            self.headers_layout.addWidget(header)
 
         self.cards_container = QWidget()
         self.cards_layout = QVBoxLayout()
@@ -46,14 +64,14 @@ class TripsView(QWidget):
         self.scroll_area.setWidget(self.cards_container)
         self.scroll_area.setWidgetResizable(True)
         self.scroll_area.verticalScrollBar().valueChanged.connect(self.on_scroll)
-
+        layout.addWidget(self.headers_container)
         layout.addWidget(self.scroll_area)
 
     def load_more_trips(self):
         """Pobiera kolejną paczkę danych z ViewModelu i tworzy karty"""
         if self.all_loaded:
             return
-        self.is_loading = True  # Blokujemy kolejne wywołania
+        self.is_loading = True
 
         start = self.current_offset
         end = start + self.chunk_size
@@ -70,6 +88,8 @@ class TripsView(QWidget):
         for trip_data in new_trips_data:
             if trip_data.id not in self.loaded_cards:
                 self.create_card(trip_data)
+            else:
+                self.cards_layout.addWidget(self.loaded_cards[trip_data.id])
 
         self.current_offset += len(new_trips_data)
 
@@ -86,7 +106,12 @@ class TripsView(QWidget):
         self.loaded_cards[trip_data.id] = card
         self.cards_layout.addWidget(card)
 
+
     # --- OBSŁUGA ZDARZEŃ ---
+    def on_header_clicked(self, field_name: str, clicked_header):
+        direction = clicked_header.get_state()
+        self.vm.header_changed(field_name, direction)
+
 
     def open_edit_dialog(self, trip_id):
         trip_data = self.vm.get_trip_by_id(trip_id)
@@ -113,14 +138,15 @@ class TripsView(QWidget):
 
     def on_data_reload(self):
         print("Pełny reload listy...")
+        layout = self.cards_layout.layout()
 
-        # Usuwanie starych widgetów
         for card in self.loaded_cards.values():
-            card.deleteLater()
-        self.loaded_cards.clear()
+            layout.removeWidget(card)
+            card.setParent(None)
 
         # Resetowanie offsetu i ładowanie od nowa
         self.current_offset = 0
+        self.scroll_area.verticalScrollBar().setValue(0)
         self.load_more_trips()
 
     def on_scroll(self, value):

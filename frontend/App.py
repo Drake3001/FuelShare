@@ -2,8 +2,7 @@ from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QLabel, QPushButt
 
 from database.Services.UserService import UserService
 from frontend.subpages.TripPage.TripsView import TripsView
-from frontend.subpages.TripPage.TripsViewModel import TripViewModel
-from frontend.UserPage import UserPage
+from frontend.subpages.UserPage.UserView import UserPage
 from database.Services.TripService import TripService
 
 class App(QMainWindow):
@@ -129,7 +128,7 @@ class App(QMainWindow):
 
 
         # Strona 4: Użytkownicy (placeholder)
-        self.users_page = UserPage()
+        self.users_page = UserPage(userService=self.user_service)
         self.stacked_widget.addWidget(self.users_page)
 
 
