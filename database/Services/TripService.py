@@ -151,3 +151,14 @@ class TripService:
             modified_trips.append((trip.id, trip.period))
         return modified_trips
 
+    def get_trips_by_user_id(self, user_id: int) -> List[TripSchema]:
+        with self.session_factory() as db:
+            query = (
+                select(Trip)
+                .options(joinedload(Trip.driver), selectinload(Trip.payers))
+                .where(
+                    (Trip.driver_id == user_id) | (~Trip.payers)
+                )
+                .order_by(Trip.start_time.desc())
+            )
+

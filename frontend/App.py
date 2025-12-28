@@ -122,14 +122,13 @@ class App(QMainWindow):
         return nav_widget
 
     def setup_pages(self):
-        # Strona 1: Lista tripów
         self.trips_list_page = TripsView(self.trip_service, self.user_service)
         self.stacked_widget.addWidget(self.trips_list_page)
 
 
-        # Strona 4: Użytkownicy (placeholder)
         self.users_page = UserPage(userService=self.user_service)
         self.stacked_widget.addWidget(self.users_page)
+
 
 
     def show_trips_list(self):

@@ -1,6 +1,6 @@
 import os
 from contextlib import contextmanager
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, Engine, event
 from sqlalchemy.orm import sessionmaker, Session
 from dotenv import load_dotenv
 from .models import Base
@@ -14,20 +14,25 @@ db_dir = os.path.dirname(DB_PATH)
 if db_dir and not os.path.exists(db_dir):
     os.makedirs(db_dir)
 
-# Synchroniczny engine
-# check_same_thread=False pozwala używać z różnych wątków (WAŻNE dla QThread!)
+
+
+
 engine = create_engine(
     DB_URL,
     echo=False,
-    connect_args={"check_same_thread": False}  # Kluczowe dla threading!
+    connect_args={"check_same_thread": False}
 )
 
-# Synchroniczny session maker
+@event.listens_for(Engine, "connect")
+def set_sqlite_pragma(dbapi_connection, _):
+    cursor = dbapi_connection.cursor()
+    cursor.execute("PRAGMA foreign_keys=ON")
+    cursor.close()
+
 SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
 
 @contextmanager
 def get_session() -> Session:
-    """Context manager dla synchronicznej sesji"""
     session = SessionLocal()
     try:
         yield session

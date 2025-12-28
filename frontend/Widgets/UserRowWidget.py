@@ -8,10 +8,11 @@ from frontend.stylesheets import userRowStyleSheet
 
 class UserRowWidget(QFrame):
     on_edit_click = pyqtSignal(int)
-    on_delete_click = pyqtSignal(int)
+    on_delete_click = pyqtSignal(int, str)
 
     def __init__(self, user: UserSchema, parent=None):
         super().__init__(parent)
+        self.user = user
         self.setup_ui()
         self.setup_styles()
         self.update_data(user)
@@ -47,8 +48,12 @@ class UserRowWidget(QFrame):
         self.btn_edit.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_FileDialogDetailedView))
         self.btn_delete.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_TrashIcon))
 
+
         self.btn_edit.setCursor(Qt.CursorShape.PointingHandCursor)
         self.btn_delete.setCursor(Qt.CursorShape.PointingHandCursor)
+
+        self.btn_delete.clicked.connect(self.on_delete_button_clicked)
+        self.btn_edit.clicked.connect(self.on_edit_button_clicked)
 
         actions_layout = QHBoxLayout()
         actions_layout.setContentsMargins(0, 0, 0, 0)
@@ -77,3 +82,7 @@ class UserRowWidget(QFrame):
         self.lbl_name.setText(self.user.name or "-")
         self.lbl_surname.setText(self.user.surname or "-")
         self.lbl_email.setText(self.user.email or "-")
+    def on_delete_button_clicked(self):
+        self.on_delete_click.emit(self.user.id, (self.user.name+' '+self.user.surname))
+    def on_edit_button_clicked(self):
+        self.on_edit_click.emit(self.user.id)

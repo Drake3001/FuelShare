@@ -1,7 +1,7 @@
 from gc import callbacks
 
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, pyqtSignal
 from typing import Dict
 
 from database.schemas.user_schema import UserSchema
@@ -13,6 +13,7 @@ from frontend.subpages.UserPage.UserViewModel import UserViewModel
 
 
 class UserPage(QWidget):
+
     def __init__(self, userService):
         super().__init__()
         self.vm = UserViewModel(userService)
@@ -58,12 +59,19 @@ class UserPage(QWidget):
         userList = self.vm.getAllUsers()
         for entry in userList:
             if entry.id not in self.loadedUserRows:
-                self.loadedUserRows[entry.id] = UserRowWidget(entry)
+                userRow = UserRowWidget(entry)
+                self.loadedUserRows[entry.id] = userRow
+                userRow.on_edit_click.connect(self.on_edit_button_clicked)
+                userRow.on_delete_click.connect(self.on_delete_button_clicked)
+
 
     def updateOrAppend(self, schema: UserSchema):
         if schema.id not in self.loadedUserRows:
-            self.loadedUserRows[schema.id] = UserRowWidget(schema)
-            self.content_layout.addWidget(self.loadedUserRows[schema.id])
+            userRow = UserRowWidget(schema)
+            self.loadedUserRows[schema.id] = userRow
+            userRow.on_edit_click.connect(self.on_edit_button_clicked)
+            userRow.on_delete_click.connect(self.on_delete_button_clicked)
+            self.content_layout.addWidget(userRow)
         else:
             self.loadedUserRows[schema.id].update_data(schema)
 
@@ -81,10 +89,15 @@ class UserPage(QWidget):
         dialog = UserDeleteDialog(parent=self, id=id, name= name)
         if dialog.exec():
             id = dialog.get_id()
-            self.vm.deleteUser(id)
-            self.content_layout.removeWidget(self.loadedUserRows[id])
-            self.loadedUserRows[id].deleteLater()
+            deleted_id = self.vm.deleteUser(id)
+            if deleted_id!=-1:
+                self.content_layout.removeWidget(self.loadedUserRows[id])
+                self.loadedUserRows[id].deleteLater()
+
         dialog.deleteLater()
+
+    def on_edit_button_clicked(self, id: int ):
+        print(f"to jest edit dostałe {id}")
 
 
 

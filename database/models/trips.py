@@ -31,14 +31,14 @@ class Trip(Base):
     average_fuel_consumed = Column(Float, nullable=False)
 
     #User
-    driver_id = Column(Integer, ForeignKey('user.id'), nullable=True)
+    driver_id = Column(Integer, ForeignKey('user.id', ondelete="SET NULL"), nullable=True)
     #Vehicle
     vehicle_id = Column(Integer, ForeignKey('vehicle.id'), nullable=True)
     #IS after refuel begining of a new period
     refuel = Column(Boolean, nullable=True)
     #Period
     period= Column(Integer, nullable=True)
-    
+
 
     driver = relationship("User", back_populates="trips_driven")
 

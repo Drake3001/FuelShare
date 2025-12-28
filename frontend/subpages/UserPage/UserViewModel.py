@@ -23,7 +23,12 @@ class UserViewModel(QObject):
         return users
     def deleteUser(self, id: int):
         if id:
-            self.userService.delete_user(id)
+            executed = self.userService.delete_user(id)
+            if executed:
+                return id
+            else:
+                return -1
+
 
 
 
