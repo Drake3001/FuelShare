@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import select, func, asc, desc
 from sqlalchemy.orm import joinedload, selectinload
 from typing import List, Optional, Tuple
 
@@ -16,7 +16,7 @@ class TripService:
     def create_all_trips(self, dtos: List[TripCreateSchema]):
         with self.session_factory() as db:
             new_trips = []
-            for dto in dtos:
+            for dto in dtos[::-1]:
                 trip_data = dto.model_dump()
                 new_trip = Trip(**trip_data)
                 new_trips.append(new_trip)
@@ -161,4 +161,21 @@ class TripService:
                 )
                 .order_by(Trip.start_time.desc())
             )
-
+    def get_unique_periods_and_count(self):
+        with self.session_factory() as db:
+            query = (
+                select(Trip.period, func.count(Trip.id), func.count(Trip.id).filter(Trip.driver_id == None).label("anonymous_trips"))
+                .group_by(Trip.period)
+                .order_by(Trip.period.asc().nulls_last())
+            )
+            result = db.execute(query).all()
+            return result
+    def get_last_trip_date(self):
+        with self.session_factory() as db:
+            query = (
+                select(Trip.end_time)
+                .order_by(Trip.start_time.desc())
+                .limit(1)
+            )
+            result = db.execute(query).scalar()
+        return result

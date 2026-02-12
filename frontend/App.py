@@ -1,12 +1,16 @@
 from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QLabel, QPushButton, QStackedWidget, QHBoxLayout
 
+from database.Services.ReportService import ReportService
 from database.Services.UserService import UserService
+from frontend.subpages.ReportPage.ReportView import ReportView
 from frontend.subpages.TripPage.TripsView import TripsView
 from frontend.subpages.UserPage.UserView import UserPage
 from database.Services.TripService import TripService
+from mtoyconn.synctrips import synctrips
+
 
 class App(QMainWindow):
-    def __init__(self, trip_service: TripService, user_service: UserService):
+    def __init__(self, trip_service: TripService, user_service: UserService, report_service: ReportService, worker=None):
         super().__init__()
         self.stacked_widget = None
         self.trips_list_page = None
@@ -15,6 +19,13 @@ class App(QMainWindow):
         #Services
         self.trip_service = trip_service
         self.user_service = user_service
+        self.report_service = report_service
+
+        # Background worker do zadań async
+        self.worker = worker
+        if self.worker:
+            self.worker.task_finished.connect(self.on_task_done)
+            self.worker_call_for_trips()
 
         #setup
         self.setup_main_window()
@@ -108,15 +119,19 @@ class App(QMainWindow):
         nav_widget.setLayout(layout)
 
         # Przycisk listy tripów
-        self.trips_btn = QPushButton("📋 Lista Tripów")
+        self.trips_btn = QPushButton("Lista Tripów")
         self.trips_btn.clicked.connect(self.show_trips_list)
 
         # Przycisk użytkownicy (na przyszłość)
-        self.users_btn = QPushButton("👥 Użytkownicy")
+        self.users_btn = QPushButton("Użytkownicy")
         self.users_btn.clicked.connect(self.show_users)
+
+        self.reports_btn = QPushButton("Raporty")
+        self.reports_btn.clicked.connect(self.show_reports)
 
         layout.addWidget(self.trips_btn)
         layout.addWidget(self.users_btn)
+        layout.addWidget(self.reports_btn)
         layout.addStretch()
 
         return nav_widget
@@ -129,6 +144,9 @@ class App(QMainWindow):
         self.users_page = UserPage(userService=self.user_service)
         self.stacked_widget.addWidget(self.users_page)
 
+        self.reports_page= ReportView(trip_service=self.trip_service, report_service=self.report_service)
+        self.stacked_widget.addWidget(self.reports_page)
+
 
 
     def show_trips_list(self):
@@ -139,6 +157,11 @@ class App(QMainWindow):
     def show_users(self):
         self.stacked_widget.setCurrentWidget(self.users_page)
         self.update_navigation_style(self.users_btn)
+
+
+    def show_reports(self):
+        self.stacked_widget.setCurrentWidget(self.reports_page)
+        self.update_navigation_style(self.reports_btn)
 
     def update_navigation_style(self, active_button):
         # Reset wszystkich przycisków
@@ -154,3 +177,18 @@ class App(QMainWindow):
         if 'QPushButton {' in active_style:
             active_style = active_style.replace('QPushButton {', 'QPushButton.active {')
         active_button.setStyleSheet(active_style)
+
+
+    def worker_call_for_trips(self):
+        start_date= self.trip_service.get_last_trip_date()
+        coro= synctrips(startDate=start_date)
+        self.worker.submit("sync_trips",coro)
+
+
+    def worker_geo_service(self):
+        pass
+
+    def on_task_done(self, task_name, result):
+        if task_name == "sync_trips":
+            self.trip_service.create_all_trips(result)
+            self.worker_geo_service()

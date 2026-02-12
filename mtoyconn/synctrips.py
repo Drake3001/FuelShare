@@ -7,7 +7,9 @@ from pytoyoda import *
 from database.schemas.trip_schema import TripCreateSchema
 
 
+
 async def synctrips(startDate: datetime, endDate: datetime=datetime.datetime.now()):
+    print("synctrips", startDate, endDate)
     dotenv.load_dotenv()
     username = os.getenv("TOYOTA_USERNAME")
     password = os.getenv("TOYOTA_PASSWORD")
@@ -15,11 +17,11 @@ async def synctrips(startDate: datetime, endDate: datetime=datetime.datetime.now
     await client.login()
     vehicles = await client.get_vehicles()
     vehicle=vehicles[0]
-    trips= await vehicle.get_trips(startDate, endDate, full_route=False)
+    trips= await vehicle.get_trips(from_date=startDate, to_date=endDate, full_route=False)
     validated_dtos= []
     for trip in trips:
         dto = parse_trips(trip)
-        if dto:
+        if dto and dto.start_time > startDate:
             validated_dtos.append(dto)
     return validated_dtos
 

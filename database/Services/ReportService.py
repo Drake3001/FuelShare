@@ -2,7 +2,6 @@ import matplotlib.pyplot as plt
 
 from database.session import get_session, engine
 import pandas as pd
-import pandas as pd
 from sqlalchemy import text
 import seaborn as sns
 from matplotlib.backends.backend_pdf import PdfPages
@@ -82,12 +81,13 @@ class ReportService:
     def __init__(self):
         self.documents_paths=[]
         self.documents_dir = "reports"
+        self.powerbi_dir = "powerbi"
         if not os.path.exists(self.documents_dir):
             os.makedirs(self.documents_dir)
             print("utworzyłem directory")
 
 
-    def generate_report(self, period: int, include_ev=False) -> pd.DataFrame:
+    def generate_report(self, period: int, include_ev=False):
         query = text(SQL_QUERY)
 
         df = pd.read_sql_query(
@@ -111,6 +111,12 @@ class ReportService:
         )
 
         df["label"] = df["name"] + " " + df["surname"] + " (" + df["user_id"].astype(str) + ")"
+
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f"{self.documents_dir}/{self.powerbi_dir}/powerbi_{period}_{timestamp}.csv"
+        df.to_csv(filename, index=False, encoding='utf-8')
+
+
 
         categories = ['total_distance_driven', 'avg_consumption_l100', 'avg_speed_kmh', 'total_fuel_paid']
         labels_radar = ['Dystans', 'Ekonomia', 'Prędkość', 'Wkład ($)']
@@ -297,8 +303,7 @@ class ReportService:
             plt.close()
 
         print(f"Raport zapisano pomyślnie w: {filename}")
-
-
+        df.to_csv(os.path.join(self.documents_dir, 'df.csv'))
 
 
 
@@ -306,4 +311,4 @@ class ReportService:
 
 if __name__ == "__main__":
     report = ReportService()
-    report.generate_report(1)
+    report.generate_report(2)

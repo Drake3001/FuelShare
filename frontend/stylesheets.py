@@ -92,3 +92,33 @@ userRowStyleSheet="""
                 color: #dc2626;
             }
         """
+reportRowStyleSheet= """
+            ReportRowWidget {
+                background-color: #ffffff;
+                border-radius: 8px;
+                border: 1px solid #e0e0e0;
+                margin-bottom: 2px;
+            }
+            ReportRowWidget:hover {
+                background-color: #f8f9fa;
+                border: 1px solid #0078d7;
+            }
+            QLabel {
+                color: #333333;
+                font-size: 13px;
+                font-family: 'Segoe UI', Arial;
+            }
+            QPushButton {
+                background-color: #0078d7;
+                color: white;
+                border-radius: 4px;
+                padding: 6px 15px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #005a9e;
+            }
+            QPushButton:pressed {
+                background-color: #004578;
+            }
+        """
