@@ -27,6 +27,8 @@ class TripSchema(TripCreateSchema):
     driver: UserSchema | None
     vehicle: VehicleSchema | None
     period: int | None
+    start_address: str | None = None
+    end_address: str | None = None
     payer_ids: List[int] = Field(default=[], validation_alias="payers")
     class Config:
         from_attributes = True
@@ -48,6 +50,8 @@ class TripUpdateSchema(BaseModel):
     payer_ids: Optional[List[int]] = None
     vehicle_id: int | None = None
     period: int | None = None
+    start_address: str | None = None
+    end_address: str | None = None
 
 
     @model_validator(mode="after")

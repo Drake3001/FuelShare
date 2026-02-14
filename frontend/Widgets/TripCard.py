@@ -2,7 +2,7 @@
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QHBoxLayout, QPushButton
 from PyQt6.QtCore import pyqtSignal
 from database.schemas.trip_schema import TripSchema
-from frontend.const import trip_record_start, trip_record_end, map_true, map_false
+from frontend.const import trip_record_start, trip_record_end, trip_record_start_address, trip_record_end_address, map_true, map_false
 from frontend.stylesheets import trip_card_stylesheet
 
 
@@ -37,6 +37,18 @@ class TripCard(QWidget):
         self.end_time_label = QLabel()  # Dynamiczny
         time_layout.addWidget(self.end_time_label)
 
+        address_widget = QWidget()
+        address_layout = QVBoxLayout()
+        address_widget.setLayout(address_layout)
+
+        address_layout.addWidget(QLabel(trip_record_start_address))
+        self.start_address_label = QLabel()
+        address_layout.addWidget(self.start_address_label)
+
+        address_layout.addWidget(QLabel(trip_record_end_address))
+        self.end_address_label = QLabel()
+        address_layout.addWidget(self.end_address_label)
+
         self.driver_label = QLabel()
         self.distance_label = QLabel()
         self.duration_label = QLabel()
@@ -53,6 +65,7 @@ class TripCard(QWidget):
         # Dodawanie do layoutu
         layout.addWidget(self.id_label)
         layout.addWidget(time_widget)
+        layout.addWidget(address_widget)
         layout.addWidget(self.driver_label)
         layout.addWidget(self.distance_label)
         layout.addWidget(self.duration_label)
@@ -96,10 +109,13 @@ class TripCard(QWidget):
         self.ev_duration_label.setText(f"{ev_dur:.2f} h")
 
         ev_dist = data.ev_distance or 0.0
-        self.ev_distance_label.setText(f"{ev_dist:.2f} h")  # Chyba km? ;)
+        self.ev_distance_label.setText(f"{ev_dist:.2f} h")
 
         self.consumption_label.setText(f"{data.fuel_consumed:.2f} L")
         self.avg_fuel_label.setText(f"{data.average_fuel_consumed:.2f} L/100km")
 
         self.refuel_label.setText(map_true if data.refuel else map_false)
         self.period_label.setText(str(data.period))
+
+        self.start_address_label.setText(data.start_address or "\u2014")
+        self.end_address_label.setText(data.end_address or "\u2014")

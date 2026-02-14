@@ -6,7 +6,9 @@ from frontend.subpages.ReportPage.ReportView import ReportView
 from frontend.subpages.TripPage.TripsView import TripsView
 from frontend.subpages.UserPage.UserView import UserPage
 from database.Services.TripService import TripService
-from mtoyconn.synctrips import synctrips
+from scripts.geocoder import geocoder
+from scripts.synctrips import synctrips
+from datetime import datetime, timezone
 
 
 class App(QMainWindow):
@@ -26,6 +28,7 @@ class App(QMainWindow):
         if self.worker:
             self.worker.task_finished.connect(self.on_task_done)
             self.worker_call_for_trips()
+        self.batch_size = 10
 
         #setup
         self.setup_main_window()
@@ -180,15 +183,35 @@ class App(QMainWindow):
 
 
     def worker_call_for_trips(self):
-        start_date= self.trip_service.get_last_trip_date()
-        coro= synctrips(startDate=start_date)
-        self.worker.submit("sync_trips",coro)
+        last_trip = self.trip_service.get_last_trip_date()
+        start_date = last_trip or datetime(2000, 1, 1, tzinfo=timezone.utc)
+        self.worker.submit("sync_trips", synctrips, start_date)
 
 
-    def worker_geo_service(self):
-        pass
+    def worker_geo_service_setup(self):
+        self.missing_geolocations=self.trip_service.get_all_trips_noLocation()
+        batch = self.missing_geolocations[:self.batch_size]
+        self.missing_geolocations = self.missing_geolocations[len(batch):]
+        script = geocoder
+        self.worker.submit("geo_service", script, batch)
+
+
 
     def on_task_done(self, task_name, result):
         if task_name == "sync_trips":
-            self.trip_service.create_all_trips(result)
-            self.worker_geo_service()
+            print("koniec sync trips zrobione ")
+            if result:
+                self.trip_service.create_all_trips(result)
+            self.worker_geo_service_setup()
+        if task_name == "geo_service":
+            self.trip_service.batch_update_addresses(result)
+            print("batch skończony")
+            if len(self.missing_geolocations)!=0:
+                batch= self.missing_geolocations[:self.batch_size]
+                self.missing_geolocations=self.missing_geolocations[self.batch_size:]
+                if len(batch)>0:
+                    script = geocoder
+                    self.worker.submit("geo_service",script,batch)
+
+
+

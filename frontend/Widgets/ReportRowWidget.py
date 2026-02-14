@@ -31,14 +31,16 @@ class ReportRowWidget(QWidget):
         self.lbl_count = QLabel()
         self.lbl_unfilled = QLabel()
 
-        self.gen_button = QPushButton('Generuj Raport')
-        self.gen_button.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.gen_button.clicked.connect(self.on_generate)
+        if self.period_num != 0:
+            self.gen_button = QPushButton('Generuj Raport')
+            self.gen_button.setCursor(Qt.CursorShape.PointingHandCursor)
+            self.gen_button.clicked.connect(self.on_generate)
 
         layout.addWidget(self.lbl_id)
         layout.addWidget(self.lbl_count, 1)
         layout.addWidget(self.lbl_unfilled, 1)
-        layout.addWidget(self.gen_button)
+        if self.period_num != 0:
+            layout.addWidget(self.gen_button)
 
     def apply_styles(self):
         self.setStyleSheet(reportRowStyleSheet)

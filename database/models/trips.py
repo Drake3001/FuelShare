@@ -13,6 +13,8 @@ class Trip(Base):
     start_lon = Column(Float, nullable=False)
     end_lat = Column(Float, nullable=False)
     end_lon = Column(Float, nullable=False)
+    start_address = Column(String, nullable=True)
+    end_address = Column(String, nullable=True)
 
     #Times
     start_time = Column(DateTime(timezone=True), nullable=False)

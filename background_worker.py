@@ -1,4 +1,5 @@
 import asyncio
+import inspect
 from PyQt6.QtCore import QThread, pyqtSignal
 
 
@@ -21,12 +22,20 @@ class BackgroundWorker(QThread):
         self.loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
         self.loop.close()
 
-    def submit(self, task_name: str, coro):
+    def submit(self, task_name: str, func, *args):
         if self.loop is None or not self.loop.is_running():
             self.task_error.emit(task_name, "Worker nie jest uruchomiony")
             return
 
-        future = asyncio.run_coroutine_threadsafe(coro, self.loop)
+        if inspect.iscoroutinefunction(func):
+            # Przypadek ASYNC: tworzymy korutynę wywołując funkcję
+            coro = func(*args)
+            future = asyncio.run_coroutine_threadsafe(coro, self.loop)
+        else:
+            # Przypadek SYNC: odpalamy w executorze
+            # run_in_executor zwraca obiekt Future, który jest kompatybilny
+            future = self.loop.run_in_executor(None, func, *args)
+
         future.add_done_callback(
             lambda f: self._on_done(task_name, f)
         )

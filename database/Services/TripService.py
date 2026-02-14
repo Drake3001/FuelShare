@@ -1,3 +1,4 @@
+from PyQt6.QtCore import QObject
 from sqlalchemy import select, func, asc, desc
 from sqlalchemy.orm import joinedload, selectinload
 from typing import List, Optional, Tuple
@@ -6,10 +7,10 @@ from database.models.trips import Trip
 from database.models.users import User
 from database.schemas.trip_schema import TripSchema, TripUpdateSchema, TripCreateSchema
 from database.session import get_session
-from datetime import datetime
+from datetime import datetime, timezone
+####Plan implementacji taki dopisać tu qobject, żebym mógł aktualizować dobrze te komponenty
 
-
-class TripService:
+class TripService(QObject):
     def __init__(self):
         self.session_factory = get_session
 
@@ -178,4 +179,47 @@ class TripService:
                 .limit(1)
             )
             result = db.execute(query).scalar()
+        if result is None:
+            return None
+        if result.tzinfo is None:
+            result = result.replace(tzinfo=timezone.utc)
         return result
+
+#musi być lat lon żeby było git
+    def get_all_trips_noLocation(self):
+        with self.session_factory() as db:
+            query = (
+                select(Trip.id, Trip.start_lat, Trip.start_lon, Trip.end_lat, Trip.end_lon)
+                .where(Trip.start_address == None, Trip.end_address == None)
+            )
+            result = db.execute(query).all()
+            return [
+                (row.id, (row.start_lat, row.start_lon), (row.end_lat, row.end_lon))
+                for row in result
+            ]
+
+    def batch_update_addresses(self, updates: List[TripUpdateSchema]) -> int:
+        if not updates:
+            return 0
+
+        updated = 0
+        with self.session_factory() as db:
+            for entry in updates:
+                data = entry.model_dump(exclude_unset=True)
+                trip_id = data.pop("id")
+
+                stmt = select(Trip).where(Trip.id == trip_id)
+                trip = db.execute(stmt).scalar_one_or_none()
+
+                if not trip:
+                    continue
+
+                for key, value in data.items():
+                    if hasattr(trip, key):
+                        setattr(trip, key, value)
+
+                updated += 1
+
+            db.commit()
+
+        return updated
