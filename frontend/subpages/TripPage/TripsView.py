@@ -33,6 +33,7 @@ class TripsView(QWidget):
 
         self.vm.trip_updated.connect(self.on_trip_updated)
         self.vm.content_changed.connect(self.on_data_reload)
+        self.vm.trips_added.connect(self.on_data_reload)
 
         self.load_more_trips()
 

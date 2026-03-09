@@ -184,7 +184,7 @@ class App(QMainWindow):
 
     def worker_call_for_trips(self):
         last_trip = self.trip_service.get_last_trip_date()
-        start_date = last_trip or datetime(2000, 1, 1, tzinfo=timezone.utc)
+        start_date = last_trip or datetime(2026, 1, 20, tzinfo=timezone.utc)
         self.worker.submit("sync_trips", synctrips, start_date)
 
 

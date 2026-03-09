@@ -1,4 +1,4 @@
-from PyQt6.QtCore import QObject
+from PyQt6.QtCore import QObject, pyqtSignal
 from sqlalchemy import select, func, asc, desc
 from sqlalchemy.orm import joinedload, selectinload
 from typing import List, Optional, Tuple
@@ -11,7 +11,9 @@ from datetime import datetime, timezone
 ####Plan implementacji taki dopisać tu qobject, żebym mógł aktualizować dobrze te komponenty
 
 class TripService(QObject):
+    trips_updated= pyqtSignal(list)
     def __init__(self):
+        super().__init__()
         self.session_factory = get_session
 
     def create_all_trips(self, dtos: List[TripCreateSchema]):
@@ -23,8 +25,11 @@ class TripService(QObject):
                 new_trips.append(new_trip)
 
             db.add_all(new_trips)
+            db.flush()
+            new_ids = [trip.id for trip in new_trips]
             db.commit()
             print(f"Pomyślnie dodano {len(new_trips)} przejazdów do bazy.")
+            self.trips_updated.emit(new_ids)
 
     def create_trip(self, trip_dto: TripCreateSchema) -> Trip:
         """Tworzenie pojedynczego tripa"""
@@ -60,6 +65,15 @@ class TripService(QObject):
             result = db.execute(query)
             trip = result.scalar_one_or_none()
             return TripSchema.model_validate(trip) if trip else None
+
+    def get_trips_listed(self, trip_ids: List[int]):
+        if not trip_ids:
+            return []
+
+        with self.session_factory() as db:
+            query = select(Trip).where(Trip.id.in_(trip_ids))
+            result = db.execute(query).scalars().all()
+            return [TripSchema.model_validate(trip) for trip in result]
 
     def update_trip(self, trip_update: TripUpdateSchema) -> (Optional[TripSchema], List[int]):
         with self.session_factory() as db:
@@ -198,11 +212,11 @@ class TripService(QObject):
                 for row in result
             ]
 
-    def batch_update_addresses(self, updates: List[TripUpdateSchema]) -> int:
+    def batch_update_addresses(self, updates: List[TripUpdateSchema]) -> List[int]:
         if not updates:
             return 0
 
-        updated = 0
+        updated = []
         with self.session_factory() as db:
             for entry in updates:
                 data = entry.model_dump(exclude_unset=True)
@@ -218,8 +232,8 @@ class TripService(QObject):
                     if hasattr(trip, key):
                         setattr(trip, key, value)
 
-                updated += 1
+                updated.append(trip_id)
 
             db.commit()
-
+        self.trips_updated.emit(updated)
         return updated

@@ -7,6 +7,7 @@ from database.schemas.trip_schema import TripSchema
 class TripViewModel(QObject):
     content_changed = pyqtSignal()
     trip_updated = pyqtSignal(list)
+    trips_added = pyqtSignal()
 
     def __init__(self, trip_service, user_service):
         super().__init__()
@@ -14,6 +15,7 @@ class TripViewModel(QObject):
         self.user_service = user_service
 
         self.user_service.user_data_changed.connect(self.handle_user_updated_or_deleted)
+        self.trip_service.trips_updated.connect(self.handle_trips_updated)
 
         self.all_trips: Dict[int, TripSchema] = {}
         self.filtered_trips: List[int] = []
@@ -115,3 +117,22 @@ class TripViewModel(QObject):
         if ids_to_refresh:
             print(f"User {user_id} zmieniony/usunięty. Odświeżam {len(ids_to_refresh)} tripów.")
             self.trip_updated.emit(ids_to_refresh)
+
+    def handle_trips_updated(self, trips_ids : List[int]):
+        updated_trips = self.trip_service.get_trips_listed(trips_ids)
+        new_ids = []
+        existing_ids = []
+        for trip in updated_trips:
+            self.all_trips[trip.id] = trip
+            if trip.id in self.filtered_trips:
+                existing_ids.append(trip.id)
+            else:
+                new_ids.append(trip.id)
+
+        if existing_ids:
+            self.trip_updated.emit(existing_ids)
+
+        if new_ids:
+            self.filtered_trips.extend(new_ids)
+            self.filtered_trips.sort()
+            self.trips_added.emit()
